@@ -40,7 +40,7 @@
 let buy_rate = ref(0.25);
 let sell_rate = ref(0.052);
 let battery_size = ref(10);
-let battery_efficiency = ref(99);
+let battery_efficiency = ref(97.5);
 let battery_price = ref(10000);
 const file = ref(null)
 
@@ -68,7 +68,6 @@ const handleFileUpload = () => {
   const reader = new FileReader();
   reader.readAsText(data);
   reader.addEventListener("load", () => {
-    let battery_capacity = 0;
     let rows = reader.result.split("\n");
     let rawData = {};
     for(let r in rows){
@@ -92,6 +91,9 @@ const handleFileUpload = () => {
             break;
           default:
             time = (Number(i) - 2) / 2;
+            if(time < 10){
+              time = "0" + time;
+            }
             key = date + '-' + time;
             value = rowData[i];
             if(!Object.hasOwn(rawData, key)){
@@ -151,24 +153,27 @@ const handleFileUpload = () => {
 
     for(let rowKey in goodData){
       let row = goodData[rowKey];
-      console.log(row);
       data_import.value +=  row.import;
       data_export.value +=  row.export;
 
-      if(battery_soc >= row.import.value * efficiency){
+      if(battery_soc === 0){
+        battery_import.value += row.import;
+      } else if(battery_soc >= row.import / efficiency){
         //Battery has enough capacity
-        let amount_to_discharge = row.import.value * efficiency;
+        let amount_to_discharge = row.import / efficiency;
         battery_soc -= amount_to_discharge;
         battery_discharge.value += amount_to_discharge;
       } else {
         //Flatten battery, and import more
-        let amount_to_discharge = battery_soc * efficiency
-        battery_soc = 0;
+        let amount_to_discharge = battery_soc / efficiency
         battery_discharge.value += amount_to_discharge;
         battery_import.value  += row.import - (amount_to_discharge * efficiency);
+        battery_soc = 0;
       }
 
-      if(battery_soc + row.export * efficiency <= battery_size.value){
+      if(row.export === 0){
+        //Nothing needs to happen, no charge to put in battery, or to export
+      } else if(battery_soc + row.export * efficiency <= battery_size.value){
         //Battery takes all the charge
         let amount_to_charge = row.export * efficiency;
         battery_soc += amount_to_charge;
@@ -179,6 +184,7 @@ const handleFileUpload = () => {
         battery_charge.value += amount_to_charge;
         battery_export.value += row.export - ( amount_to_charge / efficiency );
       }
+    
       
     }
     battery_cycles.value = (battery_charge.value / battery_size.value) / data_days.value * 365.25;
