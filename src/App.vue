@@ -1,0 +1,215 @@
+<template>
+  <h3>Buy Rate</h3>
+  <input type='numeric' v-model=buy_rate v-on:change=calculateCosts() />
+  <h3>Sell Rate</h3>
+  <input type='numeric' v-model=sell_rate v-on:change=calculateCosts() />
+  <h3>Battery Size (kwh)</h3>
+  <input type='numeric' v-model=battery_size v-on:change=calculate() />
+  <h3>Battery Efficiency (%) (charge and discharge)</h3>
+  <input type='numeric' v-model=battery_efficiency v-on:change=calculate() />
+  <h3>Battery Cost</h3>
+  <input type='numeric' v-model=battery_price v-on:change=calculateCosts() />
+  <h3>Data File</h3>
+  <input ref="file" v-on:change=handleFileUpload() type="file" />
+
+  <h3>Uploaded Data</h3>
+  <p>
+    Total Imported: <span v-html=data_import.toFixed(3) />kwh<br />
+    Total Exported: <span v-html=data_export.toFixed(3) />kwh<br />
+    Total Bill (without daily supply charge): $<span v-html="data_cost.toFixed(2)" /><br />
+    Days of data: <span v-html="data_days.toFixed(0)" /><br />
+    Cost per Day: $<span v-html="(data_cost / data_days).toFixed(2)" />
+  </p>
+
+  <h3>Simulated Battery Data</h3>
+  <p>
+    Total Imported: <span v-html=battery_import.toFixed(3) />kwh<br />
+    Total Exported: <span v-html=battery_export.toFixed(3) />kwh<br />
+    Battery Charge: <span v-html=battery_charge.toFixed(3) />kwh<br />
+    Battery Discharge: <span v-html=battery_discharge.toFixed(3) />kwh<br />
+    Battery Cycles per year: <span v-html=battery_cycles.toFixed(0) /><br />
+    Total Bill (without daily supply charge): $<span v-html="battery_cost.toFixed(2)" /><br />
+    Cost per day: $<span v-html="(battery_cost / data_days).toFixed(2)" /><br />
+    Battery Savings per day $<span v-html=battery_savings_per_day.toFixed(2) /><br />
+    Battery payback time (years) <span v-html=battery_payback.toFixed(2) /><br />
+  </p>
+</template>
+
+<script setup lang="ts">
+  import { ref  } from 'vue';
+let buy_rate = ref(0.25);
+let sell_rate = ref(0.052);
+let battery_size = ref(10);
+let battery_efficiency = ref(99);
+let battery_price = ref(10000);
+const file = ref(null)
+
+let data_import = ref(0);
+let data_export = ref(0);
+let data_cost = ref(0);
+let data_days = ref(0);
+
+let battery_import = ref(0);
+let battery_export = ref(0);
+let battery_discharge = ref(0);
+let battery_charge = ref(0);
+let battery_cycles = ref(0);
+let battery_cost = ref(0);
+let battery_savings_per_day = ref(0);
+let battery_payback = ref(0);
+
+let goodData = {};
+
+const handleFileUpload = () => {
+  let data = file.value.files[0];
+  if(data.type !== "text/csv"){
+    return; //Wrong Type
+  }
+  const reader = new FileReader();
+  reader.readAsText(data);
+  reader.addEventListener("load", () => {
+    let battery_capacity = 0;
+    let rows = reader.result.split("\n");
+    let rawData = {};
+    for(let r in rows){
+      let rowData = rows[r].split(",");
+      if(rowData[0] === '200'){
+        continue; //Header Line
+      }
+      let date = '';
+      for(let i in rowData){
+        if(Number(i) >= 50){
+          continue;
+        }
+      let time = 0;
+      let key = '';
+      let value = 0;
+        switch(i){
+          case '0':
+            break;
+          case '1':
+            date = rowData[i];
+            break;
+          default:
+            time = (Number(i) - 2) / 2;
+            key = date + '-' + time;
+            value = rowData[i];
+            if(!Object.hasOwn(rawData, key)){
+              rawData[key] = new row;
+            }
+            if(value > 0){
+              rawData[key].import = Number(value);
+            } else {
+              //Exports are negative, we want positive
+              if(value < 0){
+                rawData[key].export = Number(value) * -1;
+              }
+            }
+            
+        }
+      }
+    }
+
+    let keys = [];
+    for(let k in rawData){
+      if(Object.hasOwn(rawData, k)){
+        keys.push(k);
+      }
+    }
+
+    keys.sort();
+    goodData = {};
+    let len = keys.length;
+    let j, i;
+    for( i = 0; i < len; i++){
+      j = keys[i];
+      goodData[j] = rawData[j];
+    }
+
+    data_days.value = len / 48;
+
+    calculate();
+
+  })
+}
+
+  class row{
+    import = 0;
+    export = 0;
+  }
+
+  const calculate = () => {
+    let battery_soc = 0;
+    data_import.value = 0;
+    data_export.value = 0;
+    battery_import.value = 0;
+    battery_export.value = 0;
+    battery_discharge.value = 0;
+    battery_charge.value = 0;
+    battery_cycles.value = 0;
+    let efficiency = battery_efficiency.value / 100;
+
+    for(let rowKey in goodData){
+      let row = goodData[rowKey];
+      console.log(row);
+      data_import.value +=  row.import;
+      data_export.value +=  row.export;
+
+      if(battery_soc >= row.import.value * efficiency){
+        //Battery has enough capacity
+        let amount_to_discharge = row.import.value * efficiency;
+        battery_soc -= amount_to_discharge;
+        battery_discharge.value += amount_to_discharge;
+      } else {
+        //Flatten battery, and import more
+        let amount_to_discharge = battery_soc * efficiency
+        battery_soc = 0;
+        battery_discharge.value += amount_to_discharge;
+        battery_import.value  += row.import - (amount_to_discharge * efficiency);
+      }
+
+      if(battery_soc + row.export * efficiency <= battery_size.value){
+        //Battery takes all the charge
+        let amount_to_charge = row.export * efficiency;
+        battery_soc += amount_to_charge;
+        battery_charge.value += amount_to_charge;
+      } else {
+        let amount_to_charge = (battery_size.value - battery_soc) * efficiency
+        battery_soc = battery_size.value;
+        battery_charge.value += amount_to_charge;
+        battery_export.value += row.export - ( amount_to_charge / efficiency );
+      }
+      
+    }
+    battery_cycles.value = (battery_charge.value / battery_size.value) / data_days.value * 365.25;
+    calculateCosts();
+  }
+
+  const calculateCosts = () => {
+    let cost = 0;
+    cost += data_import.value * buy_rate.value;
+    cost -= data_export.value * sell_rate.value;
+
+    data_cost.value = cost;
+
+    cost = 0;
+    cost += battery_import.value * buy_rate.value;
+    cost -= battery_export.value * sell_rate.value;
+    battery_cost.value = cost;
+
+    battery_savings_per_day.value = (data_cost.value - battery_cost.value) / data_days.value;
+    battery_payback.value = (battery_price.value / battery_savings_per_day.value) / 365.25
+  }
+
+</script>
+
+<style lang="scss">
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+</style>
