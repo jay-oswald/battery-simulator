@@ -34,14 +34,7 @@ jobs:
         run: npm run build
       - name: Archive artifact
         shell: bash
-        run: |
-          tar \
-          --dereference --hard-dereference \
-          --directory "dist \
-          -cvf "$RUNNER_TEMP/artifact.tar" \
-          --exclude=.git \
-          --exclude=.github \
-          .
+        run: tar --create --directory "dist" -cvf "$RUNNER_TEMP/artifact.tar" .
       - name: Upload artifact
         uses: actions/upload-artifact@main
         with:
