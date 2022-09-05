@@ -101,7 +101,6 @@ const handleFileUpload = () => {
         if(Number(i) >= 50){
           continue;
         }
-      let time = 0;
       let key = '';
       let value = 0;
         switch(i){

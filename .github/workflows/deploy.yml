@@ -22,7 +22,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://jay-oswald.github.io/battery-simulator
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
