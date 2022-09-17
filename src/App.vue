@@ -1,4 +1,6 @@
 <template>
+  <v-app>
+    <v-main>
   <h3>Tarrif Type</h3>
   <select v-model=tarrif_type>
     <option value="tou">Time of use</option>
@@ -48,10 +50,13 @@
     Battery Savings per day $<span v-html=battery_savings_per_day.toFixed(2) /><br />
     Battery payback time (years) <span v-html=battery_payback.toFixed(2) /><br />
   </p>
+</v-main>
+</v-app>
 </template>
 
 <script setup lang="ts">
   import { ref  } from 'vue';
+  import { parseFile } from './util/parseFile'
   let tarrif_type = ref('tou');
   let peak_start = ref("15:00");
   let peak_end = ref("21:00");
@@ -82,79 +87,13 @@ let battery_payback = ref(0);
 let goodData = {};
 
 const handleFileUpload = () => {
+  if(!file.value || Array.isArray(file.value.files)){
+    return false;
+  }
   let data = file.value.files[0];
-  if(data.type !== "text/csv"){
-    return; //Wrong Type
-  }
-  const reader = new FileReader();
-  reader.readAsText(data);
-  reader.addEventListener("load", () => {
-    let rows = reader.result.split("\n");
-    let rawData = {};
-    for(let r in rows){
-      let rowData = rows[r].split(",");
-      if(rowData[0] === '200'){
-        continue; //Header Line
-      }
-      let date = '';
-      for(let i in rowData){
-        if(Number(i) >= 50){
-          continue;
-        }
-      let key = '';
-      let value = 0;
-        switch(i){
-          case '0':
-            break;
-          case '1':
-            date = rowData[i];
-            break;
-          default:
-            key = getKey(date, Number(i));
-            value = rowData[i];
-            if(!Object.hasOwn(rawData, key)){
-              rawData[key] = new row;
-            }
-            if(value > 0){
-              rawData[key].import = Number(value);
-            } else {
-              //Exports are negative, we want positive
-              if(value < 0){
-                rawData[key].export = Number(value) * -1;
-              }
-            }
-            
-        }
-      }
-    }
-
-    let keys = [];
-    for(let k in rawData){
-      if(Object.hasOwn(rawData, k)){
-        keys.push(k);
-      }
-    }
-
-    keys.sort();
-    goodData = {};
-    let len = keys.length;
-    let j, i;
-    for( i = 0; i < len; i++){
-      j = keys[i];
-      goodData[j] = rawData[j];
-    }
-
-    data_days.value = len / 48;
-
-    calculate();
-
-  })
+  parseFile(data);
+  calculate();
 }
-
-  class row{
-    import = 0;
-    export = 0;
-  }
 
   const calculate = () => {
     let battery_soc = 0;
@@ -235,21 +174,7 @@ const handleFileUpload = () => {
     battery_payback.value = (battery_price.value / battery_savings_per_day.value) / 365.25
   }
 
-  const getKey = (date: string, time : number) => {
-    let time_string = '';
-
-    time = (Number(time) - 2) / 2;
-    time_string = Math.floor(time) + ":";
-    if(time < 10){
-      time_string = "0" + time;
-    }
-    if(time % 2 === 0){
-      time_string += "00";
-    } else {
-      time_string += "30";
-    }
-    return date + '-' + time_string;
-  }
+ 
 
   const isPeak = (key: string) => {
     let current_time = key.substr(9);
