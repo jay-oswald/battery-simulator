@@ -2,15 +2,15 @@
   <v-app>
     <v-main>
   <h3>Tarrif Type</h3>
-  <select v-model=tarrif_type>
+  <select v-model=inputs.tarrif_type>
     <option value="tou">Time of use</option>
     <option value="single">Single</option>
   </select>
   <template v-if="tarrif_type=='tou'">
     <h3>Peak time start</h3>
-    <input type="time" v-model=peak_start />
+    <input type="time" v-model=inputs.peak_start />
     <h3>Peak time end</h3>
-    <input type="time" v-model=peak_end />
+    <input type="time" v-model=inputs.peak_end />
     </template>
   <h3>Buy Rate</h3>
   <input type='numeric' v-model=buy_rate v-on:change=calculateCosts() />
@@ -55,8 +55,14 @@
 </template>
 
 <script setup lang="ts">
-  import { ref  } from 'vue';
+  import { ref, computed, watch, reactive, watchEffect  } from 'vue';
   import { parseFile } from './util/parseFile'
+  import { useStore } from '@/store';
+
+  const store = useStore();
+
+  console.log(store);
+
   let tarrif_type = ref('tou');
   let peak_start = ref("15:00");
   let peak_end = ref("21:00");
@@ -85,6 +91,7 @@ let battery_savings_per_day = ref(0);
 let battery_payback = ref(0);
 
 let goodData = {};
+let inputs = reactive(store.getters['getInputs']);
 
 const handleFileUpload = () => {
   if(!file.value || Array.isArray(file.value.files)){
@@ -94,6 +101,10 @@ const handleFileUpload = () => {
   parseFile(data);
   calculate();
 }
+
+watch(inputs, (newInput, oldInput) => {
+  store.commit('setInputs', newInput);
+});
 
   const calculate = () => {
     let battery_soc = 0;
