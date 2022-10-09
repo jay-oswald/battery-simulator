@@ -11,7 +11,7 @@ export const parseFile = (file: File) => {
             return false;
         }
         const rows = reader.result.split("\n");
-        const parsedData = parseAusNet(rows);
+        parseAusNet(rows);
 
         //TODO Update in store
       })

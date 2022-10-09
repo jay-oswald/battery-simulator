@@ -1,3 +1,4 @@
+import { store } from '@/store';
 import { Row, Rows } from '../classes/Row';
 
 const getKey = (date: string, time : number) => {
@@ -6,7 +7,7 @@ const getKey = (date: string, time : number) => {
     time = (Number(time) - 2) / 2;
     time_string = Math.floor(time) + ":";
     if(time < 10){
-      time_string = "0" + time;
+      time_string = "0" + time_string;
     }
     if(time % 2 === 0){
       time_string += "00";
@@ -73,6 +74,10 @@ export const parseAusNet = (rows: string[]): Rows => {
       j = keys[i];
       goodData[j] = rawData[j];
     }
+
+    store.commit('setData', goodData);
+    store.dispatch('parseData');
+
 
     return goodData;
 }
