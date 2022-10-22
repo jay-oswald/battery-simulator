@@ -1,5 +1,4 @@
-import { store } from '@/store';
-import { Row, Rows } from '../classes/Row';
+import { Row, Rows } from '../../store/battery';
 
 const getKey = (date: string, time : number) => {
     let time_string = '';
@@ -20,7 +19,6 @@ const getKey = (date: string, time : number) => {
 export const parseAusNet = (rows: string[]): Rows => {
 
     const rawData: Rows = {};
-    const goodData: Rows = {};
 
 
     for(const r in rows){
@@ -60,24 +58,5 @@ export const parseAusNet = (rows: string[]): Rows => {
       }
     }
 
-    const keys = [];
-    for(const k in rawData){
-      if(Object.prototype.hasOwnProperty.call(rawData, k)){
-        keys.push(k);
-      }
-    }
-
-    keys.sort();
-    const len = keys.length;
-    let j, i;
-    for( i = 0; i < len; i++){
-      j = keys[i];
-      goodData[j] = rawData[j];
-    }
-
-    store.commit('setData', goodData);
-    store.dispatch('parseData');
-
-
-    return goodData;
+    return rawData;
 }
