@@ -1,0 +1,17 @@
+name: Linting
+
+on:
+  pull_request
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: install npm
+        run: npm i
+      - name: lint
+        run: npm run lint
