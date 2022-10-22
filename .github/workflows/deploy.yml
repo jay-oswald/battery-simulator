@@ -29,8 +29,8 @@ jobs:
           node-version: 16
       - name: install npm
         run: npm i
-      - name: build
-        run: npm run build
+      - name: generate
+        run: npm run generate
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
