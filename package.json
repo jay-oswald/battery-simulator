@@ -6,14 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "generate": "NODE_ENV=production next build && next export"
+    "lint": "next lint"
   },
   "dependencies": {
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@mui/material": "^5.10.10",
     "@reduxjs/toolkit": "^1.8.6",
+    "csv-parse": "^5.3.1",
     "next": "12.3.1",
     "next-redux-wrapper": "^8.0.0",
     "react": "18.2.0",

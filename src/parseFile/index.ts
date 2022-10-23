@@ -1,7 +1,8 @@
+import { parse } from 'csv-parse/sync';
 import { parseAusNet } from "./ausnet";
 import { Rows } from '../../store/battery';
-import { setData } from "../../store/battery";
-import { useDispatch } from "react-redux";
+import { saPower } from "./sapower";
+
 
 export const parseFile = async (file: File): Promise<Rows> => {
     if (file.type !== "text/csv") {
@@ -10,12 +11,18 @@ export const parseFile = async (file: File): Promise<Rows> => {
 
     let data: Rows = {};
     const rawData = await readFileAsync(file);
-    if(rawData === null || typeof rawData !== 'string'){
+    if(rawData === null || typeof rawData !== 'string' || rawData === ''){
         return {};
         //TODO errors
     }
-    let rows = rawData.split('\n');
-    data = parseAusNet(rows);
+
+    const rows = parse(rawData, {relax_column_count: true});
+    if(rows[0].length === 5){
+        data = saPower(rows);
+    } else if(rows[0].length === 9) {
+        data = parseAusNet(rows);
+    }
+
 
     const keys = [];
     for (const k in data) {
@@ -34,8 +41,8 @@ export const parseFile = async (file: File): Promise<Rows> => {
     let j, i;
     for (i = 0; i < len; i++) {
         j = keys[i];
+        let date = j.substring(0,10);
 
-        let date = j.substring(0, 8);
         if(date !== current_date && !any_export){
             //New Day, and never exported, wipe date before solar
             goodData = {};
@@ -52,10 +59,13 @@ export const parseFile = async (file: File): Promise<Rows> => {
 }
 
 function readFileAsync(file: File) {
-    return new Promise<string | ArrayBuffer | null>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       let reader = new FileReader();
   
       reader.onload = () => {
+        if(typeof reader.result !== 'string'){
+            return '';
+        }
         resolve(reader.result);
       };
   
