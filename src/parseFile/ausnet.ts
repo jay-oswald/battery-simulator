@@ -1,28 +1,25 @@
 import { Row, Rows } from '../../store/battery';
 
-const getKey = (date: string, time : number) => {
-    let time_string = '';
-
+const getKey = (dateString: string, time : number) => {
+  let date = new Date();
+  date.setUTCFullYear(
+    parseInt(dateString.substring(0,4)),
+    parseInt(dateString.substring(4,6)) - 1,
+    parseInt(dateString.substring(6,8))
+    )
+  
     time = (Number(time) - 2) / 2;
-    time_string = Math.floor(time) + ":";
-    if(time < 10){
-      time_string = "0" + time_string;
-    }
-    if(time % 2 === 0){
-      time_string += "00";
-    } else {
-      time_string += "30";
-    }
-    return date + '-' + time_string;
+    date.setUTCHours(Math.floor(time), (time - Math.floor(time)) *  60, 0, 0);
+    return date.toISOString();
   }
 
-export const parseAusNet = (rows: string[]): Rows => {
+export const parseAusNet = (rows: string[][]): Rows => {
 
     const rawData: Rows = {};
 
 
     for(const r in rows){
-      const rowData = rows[r].split(",");
+      const rowData = rows[r];
       if(rowData[0] === '200'){
         continue; //Header Line
       }
@@ -46,11 +43,11 @@ export const parseAusNet = (rows: string[]): Rows => {
               rawData[key] = new Row;
             }
             if(value > 0){
-              rawData[key].import = Number(value);
+              rawData[key].import += Number(value);
             } else {
               //Exports are negative, we want positive
               if(value < 0){
-                rawData[key].export = Number(value) * -1;
+                rawData[key].export += Number(value) * -1;
               }
             }
             

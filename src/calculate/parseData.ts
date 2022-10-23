@@ -26,7 +26,7 @@ export default (data: Rows, inputs: Inputs): Result => {
         let row = data[rowKey];
         let peak = isPeak(rowKey, inputs);
 
-        let date: string = rowKey.substring(0, 8);
+        let date: string = rowKey.substring(0, 10);
         dates[date] = true;
 
         if (peak) {
