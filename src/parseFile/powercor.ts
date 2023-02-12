@@ -38,9 +38,6 @@ export const parsePowercor = (rows: string[][]): Rows => {
       let date = '';
       const isExport = isExportRow(rowData);
 
-      console.table(rowData);
-      console.log(isExport);
-
       for(const i in rowData){
         if(Number(i) >= 50){
           continue;
@@ -56,7 +53,6 @@ export const parsePowercor = (rows: string[][]): Rows => {
           default:
             key = getKey(date, Number(i));
             value = Number(rowData[i]);
-            console.log(key, value);
             if(!Object.prototype.hasOwnProperty.call(rawData, key)){
               rawData[key] = new Row;
             }

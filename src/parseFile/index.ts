@@ -6,7 +6,6 @@ import { parsePowercor } from './powercor';
 
 
 export const parseFile = async (file: File): Promise<Rows> => {
-    console.log(file);
     if (file === undefined || file.type !== "text/csv") {
         return {}; //Wrong Type
     }
@@ -20,7 +19,6 @@ export const parseFile = async (file: File): Promise<Rows> => {
 
     const rows = parse(rawData, {relax_column_count: true});
     const headerLength = rows[0].length;
-    console.log(rows[0]);
     if(headerLength === 5){
         data = saPower(rows);
     } else if(headerLength === 9) {
