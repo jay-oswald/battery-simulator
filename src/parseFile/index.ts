@@ -2,10 +2,11 @@ import { parse } from 'csv-parse/sync';
 import { parseAusNet } from "./ausnet";
 import { Rows } from '../../store/battery';
 import { saPower } from "./sapower";
+import { parsePowercor } from './powercor';
 
 
 export const parseFile = async (file: File): Promise<Rows> => {
-    if (file.type !== "text/csv") {
+    if (file === undefined || file.type !== "text/csv") {
         return {}; //Wrong Type
     }
 
@@ -17,10 +18,13 @@ export const parseFile = async (file: File): Promise<Rows> => {
     }
 
     const rows = parse(rawData, {relax_column_count: true});
-    if(rows[0].length === 5){
+    const headerLength = rows[0].length;
+    if(headerLength === 5){
         data = saPower(rows);
-    } else if(rows[0].length === 9) {
+    } else if(headerLength === 9) {
         data = parseAusNet(rows);
+    } else if(headerLength === 54){
+        data = parsePowercor(rows);
     }
 
 
