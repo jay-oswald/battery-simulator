@@ -3,6 +3,7 @@ import { parseAusNet } from "./ausnet";
 import { Rows } from '../../store/battery';
 import { saPower } from "./sapower";
 import { parsePowercor } from './powercor';
+import { parseOrigin } from './origin';
 
 
 export const parseFile = async (file: File): Promise<Rows> => {
@@ -19,13 +20,18 @@ export const parseFile = async (file: File): Promise<Rows> => {
 
     const rows = parse(rawData, {relax_column_count: true});
     const headerLength = rows[0].length;
+    const row2Length = rows[1].length;
     if(headerLength === 5){
         data = saPower(rows);
     } else if(headerLength === 9) {
         data = parseAusNet(rows);
     } else if(headerLength === 54){
         data = parsePowercor(rows);
+    } else if(row2Length === 103) {
+        data = parseOrigin(rows);
     }
+
+    console.log(data);
 
 
     const keys = [];

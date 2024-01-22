@@ -21,13 +21,20 @@ export default (data: Rows, inputs: Inputs): Result => {
     let battery_soc = 0;
     let efficiency = inputs.battery_efficiency / 100;
     let dates: any = {};
+    let hourlyTotals = {};
 
     for (let rowKey in data) {
         let row = data[rowKey];
         let peak = isPeak(rowKey, inputs);
-
         let date: string = rowKey.substring(0, 10);
         dates[date] = true;
+        let time: string = rowKey.substring(11,16);
+        if(!hourlyTotals.hasOwnProperty(time)){
+            hourlyTotals[time] = {"import": 0, "export": 0};
+        }
+        hourlyTotals[time].import += row.import
+        hourlyTotals[time].export += row.export
+
 
         if (peak) {
             result.total_imported_peak += row.import;
@@ -79,6 +86,10 @@ export default (data: Rows, inputs: Inputs): Result => {
     }
     result.days_of_data = Object.keys(dates).length;
     result.battery_cycles = (result.battery_charge / inputs.battery_size) / result.days_of_data * 365.25;
+
+    // for(let time in hourlyTotals){
+    //     console.log(time + ", " + hourlyTotals[time].import + ", " + hourlyTotals[time].export);
+    // }
 
     return result;
 }
